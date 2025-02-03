@@ -25,7 +25,6 @@ def main():
 	input_id = None
 	midi_found = True
 
-
 	for i in range(pygame.midi.get_count()):
 		if pygame.midi.get_device_info(i)[2]:
 			input_id = i
