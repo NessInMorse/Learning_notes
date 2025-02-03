@@ -5,7 +5,7 @@ import os
 keys = ['C', 'C# | D♭', 'D', 'D# | E♭', 'E | F♭', 'F | E#', 'F# | G♭', 'G', 'G# | A♭', 'A', 'A# | B♭', 'B | C♭']
 ly_keys = [['c'], ['cis', 'des'], ['d'], ['dis', 'ees'], ['e', 'fes'], ['f', 'eis'], ['fis', 'ges'], ['g'], ['gis', 'aes'], ['a'], ['ais', 'bes'], ['b', 'ces']]
 res_form = lambda x: keys[x % 12]
-octave_designation_form = lambda x: ((x - 12) // 12)
+octave_designation_form = lambda x: ((x - 11) // 12)
 get_pitch_name = lambda x: f"{res_form(x)}{octave_designation_form(x)}"
 
 def list_midi_devices():
