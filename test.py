@@ -19,8 +19,9 @@ def main():
 	midi_found = True
 
 	keys = ['C', 'C# | D♭', 'D', 'D# | E♭', 'E | F♭', 'F | E#', 'F# | G♭', 'G', 'G# | A♭', 'A', 'A# | B♭', 'B | C♭']
-	res_form = lambda x: x % 12
-	octave_designation_form = lambda x: ((x - 10) // 12)
+	res_form = lambda x: keys[x % 12]
+	octave_designation_form = lambda x: ((x - 12) // 12)
+	get_pitch_name = lambda x: f"{res_form(x)}{octave_designation_form(x)}"
 
 	for i in range(pygame.midi.get_count()):
 		if pygame.midi.get_device_info(i)[2]:
@@ -39,16 +40,33 @@ def main():
 
 		midi_input = pygame.midi.Input(input_id)
 
+		random_notes = [randint(71, 71) for i in range(5)]
+		current_note = 0
+		counter = 0
+
 		try:
 			print("Listening for MIDI input...")
 			while True:
+
+				if not counter:
+					print(f"Please hit strike {get_pitch_name(random_notes[current_note])}")
+					counter += 1
+
+
 				if midi_input.poll(): # Check if data coming in
 					midi_events = midi_input.read(10)
 					for event in midi_events:
 						data, timestamp = event
 						status, note, velocity, _ = data
 						if status == 144 and velocity > 0: # Note On event
-							print(f"Note ON: {note} {keys[res_form(note)]}{octave_designation_form(note)} (Velocity: {velocity})")
+							if note == random_notes[current_note]:
+								print("Yeeeeet")
+								if current_note == len(random_notes) - 1:
+									print("Congratulations, you finished!")
+								else:
+									counter = 0
+									current_note += 1
+							# print(f"Note ON: {note} {keys[res_form(note)]}{octave_designation_form(note)} (Velocity: {velocity})")
 							# print(f"{keys[res_form(note)]}{octave_designation_form(note)}")
 						elif status == 128 or (status == 144 and velocity == 0): # Note Off event
 							pass
