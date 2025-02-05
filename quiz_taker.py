@@ -2,6 +2,8 @@ from random import randint, choice
 import pygame.midi
 import os
 import wx
+import time
+import datetime
 
 keys = [['c'], ['cis', 'des'], ['d'], ['dis', 'ees'], ['e'], ['f'], ['fis', 'ges'], ['g'], ['gis', 'aes'], ['a'], ['ais', 'bes'], ['b']]
 res_form = lambda x: keys[x % 12]
@@ -9,6 +11,10 @@ octave_designation_form = lambda x: ((x - 12) // 12)
 get_pitch_name = lambda x: f"{choice(res_form(x))}{octave_designation_form(x)}"
 
 random_notes = []
+min_max_range = ()
+white_notes_included = 0
+black_notes_included = 0
+number_of_notes = 5
 
 class InitialPanel(wx.Panel):
 	def __init__(self, parent, switch_callback):
@@ -50,6 +56,7 @@ class InitialPanel(wx.Panel):
 		self.switch_callback()
 	
 	def btn_read_settings(self, event):
+		global min_max_range, white_notes_included, black_notes_included, number_of_notes
 		lower_bound = int(self.combo_1.GetCurrentSelection()) + 21
 		upper_bound = int(self.combo_2.GetCurrentSelection()) + 21
 		use_black_keys = self.checkbox1.GetValue()
@@ -58,8 +65,9 @@ class InitialPanel(wx.Panel):
 
 		if lower_bound >= 21 and upper_bound >= 21 and (lower_bound + 1) < upper_bound and (use_black_keys or use_white_keys):
 			print("VALID")
-			print(lower_bound)
-			print(upper_bound)
+			white_notes_included = use_white_keys
+			black_notes_included = use_black_keys
+			min_max_range = [lower_bound, upper_bound]
 			self.__generate_notes(lower_bound, upper_bound, use_black_keys, use_white_keys)
 		if lower_bound == -1:
 			print("Please choose a lower bound")
@@ -71,7 +79,7 @@ class InitialPanel(wx.Panel):
 			print("Choose at least one of the type of keys to use")
 	
 	def __generate_notes(self, lower_bound, upper_bound, use_black_keys, use_white_keys):
-		iterations = 100
+		iterations = 5
 		black_keys = [1, 3, 6, 8, 10]
 		white_keys = [0, 2, 4, 5, 7, 9, 11]
 		possible_keys = [i for i in range(12)]
@@ -100,7 +108,7 @@ class InitialPanel(wx.Panel):
 		infile.close()
 		# random_notes = [randint(min_range, max_range) for i in range(iterations)]
 		random_notes = []
-		while len(random_notes) < 100:
+		while len(random_notes) < 5:
 			random_note = randint(min_range, max_range)
 			if len(random_notes) >= 1 and random_note != random_notes[-1] and (random_note % 12) in possible_keys:
 					random_notes.append(random_note)
@@ -151,7 +159,7 @@ class QuizPanel(wx.Panel):
 
 		self.parent = parent
 		self.counter = 1
-		self.total = 100
+		self.total = 5
 
 		input_id = None
 		midi_found = True
@@ -210,19 +218,44 @@ class QuizPanel(wx.Panel):
 					if note == random_notes[self.counter - 1]:
 						print(get_pitch_name(note))
 						wx.CallAfter(self.increment_counter)
-		# midi_input.close()
-		# pygame.midi.quit()
 
 
 	def increment_counter(self):
-		if self.counter < 100:
+		global min_max_range, white_notes_included, black_notes_included, number_of_notes
+		if self.counter <= 5:
 			self.counter += 1
-			self.parent.SetTitle(f"{self.counter}/{self.total}")
-			image = wx.Image(f"notes/note{self.counter}.png", wx.BITMAP_TYPE_PNG)
-			image.Rescale(500, 500)
-			image.ConvertToBitmap()
-			self.image_ctrl.SetBitmap(image)
-			self.Update()
+			if self.counter < 6:
+				self.parent.SetTitle(f"{self.counter}/{self.total}")
+				image = wx.Image(f"notes/note{self.counter}.png", wx.BITMAP_TYPE_PNG)
+				image.Rescale(500, 500)
+				image.ConvertToBitmap()
+				self.image_ctrl.SetBitmap(image)
+				self.Update()
+			if self.counter == 2:
+				self.datetime = str(datetime.datetime.now())
+				self.begin = time.time()
+		if self.counter == 6:
+			self.end = time.time()
+			out_file = open("measurements/raw/quiz_times.tsv", "a")
+			time_taken_float = self.end - self.begin
+			time_taken = f"{time_taken_float:.2f}"
+			seconds_per_note = f"{(time_taken_float/number_of_notes):.4f}"
+			notes_per_second = f"{(number_of_notes/time_taken_float):.7f}"
+			min_max_range = [get_pitch_name(i).upper() for i in min_max_range]
+			out_file.write(f"{self.datetime}\t{'-'.join([str(i) for i in min_max_range])}\t{number_of_notes}\t{white_notes_included}\t{black_notes_included}\t{time_taken}\t{seconds_per_note}\t{notes_per_second}\n")
+			out_file.close()
+
+			new_date = self.datetime.split(" ")[0]
+
+			out_file = open(f"measurements/raw/random_notes{new_date}.txt", "w")
+			out_file.write(f"{[str(i) for i in random_notes]}")
+			out_file.close()
+
+			self.parent.SetTitle(f"You finished, congratulations!")
+
+
+
+
 	
 
 class MainFrame(wx.Frame):
