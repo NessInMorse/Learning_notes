@@ -24,7 +24,6 @@ def create_new_note_file(min_range, max_range, iterations):
 		print(pitch_name[i], ly_notes[i])
 	# a = a + b
 	sheets = []
-	options = "abcdefg"
 	counter = 0
 	for random_note in random_notes:
 		ly_note = midi_to_lilypond(random_note)
